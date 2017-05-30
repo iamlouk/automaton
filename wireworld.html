@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<meta charset="utf-8">
+	<title>Wireworld!</title>
+	<link rel="stylesheet" href="./style.css">
+</head>
+<body>
+	<canvas id="canvas"></canvas>
+	<script type="text/javascript">
+	let canvas = document.getElementById('canvas');
+	canvas.width = canvas.offsetWidth - 4;
+	canvas.height = canvas.offsetHeight - 4;
+	let ctx = canvas.getContext('2d');
+
+	const CELL_WIDTH = 10;
+	const CELL_HEIGHT = 10;
+	const CELLS_X = Math.ceil(canvas.width / CELL_WIDTH);
+	const CELLS_Y = Math.ceil(canvas.height / CELL_HEIGHT);
+
+	const HEAD = 1, TAIL = 2, EMPTY = 3, CONDUCTOR = 4;
+	let f = 0.00001, p = 0.005;
+	let colors = {
+		[HEAD]: 'rgb(0, 46, 241)',
+		[TAIL]: 'rgb(255, 0, 0)',
+		[EMPTY]: 'rgb(0, 0, 0)',
+		[CONDUCTOR]:   'rgb(255, 255, 0)',
+	};
+	let neighbors = [
+		{ x: -1, y: -1 }, { x:  0, y: -1 },
+		{ x: +1, y: -1 }, { x: -1, y:  0 },
+		{ x: +1, y:  0 }, { x: -1, y: +1 },
+		{ x:  0, y: +1 }, { x: +1, y: +1 },
+	];
+	ctx.fillStyle = colors[EMPTY];
+	ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+
+	let update = (matrix, state, _x, _y) => {
+		if (state === EMPTY) {
+			return EMPTY;
+		} else if (state === HEAD) {
+			return TAIL;
+		} else if (state === TAIL) {
+			return CONDUCTOR;
+		} else if (state === CONDUCTOR) {
+			let heads = 0;
+			for (let vec of neighbors) {
+				let x = _x + vec.x, y = _y + vec.y;
+				if (x < 0)             { x = CELLS_X + x; }
+				else if (x >= CELLS_X) { x = x - CELLS_X; }
+				if (y < 0)             { y = CELLS_Y + y; }
+				else if (y >= CELLS_Y) { y = y - CELLS_Y; }
+
+				// console.log(x, y, _x, _y);
+
+				if (matrix[x][y] === HEAD) {
+					heads++;
+				}
+			}
+			return (heads == 1 || heads == 2) ? HEAD : CONDUCTOR;
+		}
+	};
+
+
+	const matrix = ({
+
+		next: [],
+		prev: [],
+
+		reset: function(){
+			for (let i = 0; i<CELLS_X; i++) {
+				this.next[i] = [];
+				this.prev[i] = [];
+				for (let j = 0; j<CELLS_Y; j++) {
+					this.next[i][j] = EMPTY;
+				}
+			}
+			return this;
+		},
+
+		change: function(){
+			let temp = this.prev;
+			this.prev = this.next;
+			this.next = temp;
+			for (let x = 0; x<CELLS_X; x++) {
+				for (let y = 0; y<CELLS_Y; y++) {
+					let state = this.prev[x][y];
+					let next = update(this.prev, state, x, y);
+					this.next[x][y] = next;
+					if (next != state) {
+						ctx.fillStyle = colors[next];
+						ctx.fillRect(x * CELL_WIDTH, y * CELL_HEIGHT, CELL_WIDTH, CELL_HEIGHT);
+					}
+				}
+			}
+		},
+
+		seed: function(asciiart){
+			let ascii = {
+				'+': CONDUCTOR,
+				'-': CONDUCTOR,
+				'|': CONDUCTOR,
+				' ': EMPTY,
+				'#': HEAD
+			};
+
+			for (let x = 0; x < asciiart[0].length; x++){
+				for (let y = 0; y < asciiart.length; y++){
+					this.next[x][y] = ascii[ asciiart[y][x] ];
+					ctx.fillStyle = colors[ this.next[x][y] ];
+					ctx.fillRect(x * CELL_WIDTH, y * CELL_HEIGHT, CELL_WIDTH, CELL_HEIGHT);
+				}
+			}
+
+			return this;
+		}
+
+	}).reset().seed([
+		'                                     ',
+		'                  #                  ',
+		'                  |                  ',
+		'                  +                  ',
+		' +---------------+ +---------------+ ',
+		' |                                 | ',
+		' +---------------+ +---------------+ ',
+		'                  +                  ',
+		'                  |                  ',
+		'                  |                  ',
+		'                  |                  ',
+		'                  |                  ',
+		'                  |                  ',
+		'                  |                  ',
+		'                  +                  ',
+		'             +---+ +---+             ',
+		'             |    +    |             ',
+		'             |    |    +--------+    ',
+		'             |    +    |        |    ',
+		'             +---+ +---+        |    ',
+		'                  +             |    ',
+		'                  |             |    ',
+		'                  |             |    ',
+		'                  |             |    ',
+		'                  +             |    ',
+		' +---------------+ +------------+--+ ',
+		' |                                 | ',
+		' +---------------+ +---------------+ ',
+	]);
+
+
+	let ticks = 0;
+	let loop = () => {
+		if (loop.paused != true) {
+			matrix.change();
+			ticks += 1;
+
+			if (ticks % 10 == 0) {
+				matrix.next[18][2] = HEAD;
+			}
+		}
+
+		setTimeout(loop, loop.delay);
+	};
+
+
+	loop.paused = false;
+	loop.delay = 1000 / 15;
+	loop();
+
+
+	window.addEventListener('click', event => loop.paused = !loop.paused, false);
+
+
+	</script>
+</body>
+</html>

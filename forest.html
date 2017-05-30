@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<meta charset="utf-8">
+	<title>Forestfire simulator!</title>
+	<link rel="stylesheet" href="./style.css">
+</head>
+<body>
+	<canvas id="canvas"></canvas>
+	<script type="text/javascript">
+	let canvas = document.getElementById('canvas');
+	canvas.width = canvas.offsetWidth - 4;
+	canvas.height = canvas.offsetHeight - 4;
+	let ctx = canvas.getContext('2d');
+
+	const CELL_WIDTH = 3, CELL_HEIGHT = 3;
+	const CELLS_X = Math.ceil(canvas.width / CELL_WIDTH);
+	const CELLS_Y = Math.ceil(canvas.height / CELL_HEIGHT);
+
+	const BURNING_1 = 1, BURNING_2 = 2, BURNING_3 = 3, EMPTY = 4, TREE = 5;
+	let f = 0.00001, p = 0.005;
+	let colors = {
+		[BURNING_1]: 'rgb(241, 51, 0)',
+		[BURNING_2]: 'rgb(170, 40, 0)',
+		[BURNING_3]: 'rgb(94, 22, 0)',
+		[EMPTY]:     'rgb(28, 46, 0)',
+		[TREE]:      'rgb(167, 233, 3)'
+	};
+	let cells = {
+		[BURNING_1]: 0,
+		[BURNING_2]: 0,
+		[BURNING_3]: 0,
+		[EMPTY]:     0,
+		[TREE]:      0
+	};
+
+
+	let neighbors = [
+		{ x: -1, y: -1 }, { x:  0, y: -1 },
+		{ x: +1, y: -1 }, { x: -1, y:  0 },
+		{ x: +1, y:  0 }, { x: -1, y: +1 },
+		{ x:  0, y: +1 }, { x: +1, y: +1 },
+	];
+
+	let update = (matrix, state, _x, _y) => {
+		if (state === BURNING_1) {
+			return BURNING_2;
+		} else if (state === BURNING_2) {
+			return BURNING_3;
+		} else if (state === BURNING_3) {
+			return EMPTY;
+		} else if (state === EMPTY) {
+			return Math.random() <= p ? TREE : EMPTY;
+		} else {
+			for (let vec of neighbors) {
+				let x = _x + vec.x, y = _y + vec.y;
+				let _state = (x < 0 || x >= CELLS_X || y < 0 || y >= CELLS_Y) ? EMPTY : matrix[x][y];
+
+				if (_state === BURNING_1 || _state === BURNING_2 || _state === BURNING_3)
+					return BURNING_1;
+			}
+			return Math.random() <= f ? BURNING_1 : TREE;
+		}
+	};
+
+
+	const matrix = ({
+
+		next: [],
+		prev: [],
+
+		clear: function(){
+			ctx.fillStyle = colors[EMPTY];
+			ctx.fillRect(0, 0, canvas.width, canvas.height);
+			for (let i = 0; i<CELLS_X; i++) {
+				this.next[i] = [];
+				this.prev[i] = [];
+				for (let j = 0; j<CELLS_Y; j++)
+					this.next[i][j] = EMPTY;
+			}
+			return this;
+		},
+
+		change: function(){
+			let temp = this.prev;
+			this.prev = this.next;
+			this.next = temp;
+			for (let x = 0; x < CELLS_X; x++) {
+				for (let y = 0; y < CELLS_Y; y++) {
+					let state = this.prev[x][y];
+					let next = update(this.prev, state, x, y);
+					this.next[x][y] = next;
+					if (next != state) {
+						cells[state] -= 1;
+						cells[next] += 1;
+						ctx.fillStyle = colors[next];
+						ctx.fillRect(x * CELL_WIDTH, y * CELL_HEIGHT, CELL_WIDTH, CELL_HEIGHT);
+					}
+				}
+			}
+		}
+	}).clear();
+
+	let loop = () => {
+		if (!loop.paused) {
+			matrix.change();
+			loop.ticks += 1;
+		}
+
+		setTimeout(loop, loop.delay);
+	};
+	loop.paused = false;
+	loop.delay = 1000 / 30;
+	loop.ticks = 0;
+	loop();
+
+
+	window.addEventListener('click', event => loop.paused = !loop.paused, false);
+
+	</script>
+</body>
+</html>

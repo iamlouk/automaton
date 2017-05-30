@@ -1,0 +1,22 @@
+* {
+    padding: 0px;
+    margin: 0px;
+}
+
+html, body {
+    width: 100vw;
+    height: 100vh;
+}
+
+#canvas {
+    border: 2px solid rgb(50, 50, 50);
+    border-radius: 5px;
+
+    width: 90%;
+    height: 90%;
+
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translateX(-50%) translateY(-50%);
+}
