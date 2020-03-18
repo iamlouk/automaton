@@ -20,7 +20,7 @@
 </head>
 	<canvas id="canvas"></canvas>
 	<script type="module">
-		import init, { get_universe } from './pkg/disease.js'
+		import init, { Simulation } from './pkg/disease.js'
 
 		document.addEventListener('DOMContentLoaded', async (event) => {
 			let canvas = document.getElementById('canvas')
@@ -29,18 +29,22 @@
 
 			await init()
 
-			let universe = get_universe()
+			let sim = Simulation.new(canvas.width, canvas.height)
 
-			let i = 0
-			setInterval(() => {
-				let stats = universe.tick()
-			
-				console.info(`Tick #${i}`, stats)
+			// let frame = 0
+			let step = () => {
+				let stats = sim.step()
 
-				universe.update()
-			}, 500)
+				/*
+				if (++frame % 20 == 0) {
+					console.info(`Frame #${frame}: healthy=${stats[0]}, infected=${stats[1]}, cured=${stats[2]}`)
+				}
+				*/
 
-			console.info('Module loaded...!')
+				window.requestAnimationFrame(step)
+			}
+
+			step()
 		})
 
 	</script>
