@@ -34,12 +34,12 @@ impl Individual {
             return;
         }
 
-        self.pos += (self.vel * dt);
+        self.pos += self.vel * dt;
 
         let x_too_small = self.pos.x < INDIVIDUAL_RADIUS;
         let x_too_big = self.pos.x + INDIVIDUAL_RADIUS > width;
         let y_too_small = self.pos.y < INDIVIDUAL_RADIUS;
-        let y_too_big = self.pos.y + INDIVIDUAL_RADIUS >= height;
+        let y_too_big = self.pos.y + INDIVIDUAL_RADIUS > height;
 
         if x_too_small || x_too_big {
             self.vel.x *= -1.0;
@@ -163,22 +163,26 @@ impl Simulation {
         let mut total_infected = 0;
         let mut total_cured = 0;
 
-        for individual in &mut self.individuals {
-            individual.update_position(dt, self.width, self.height);
-            if individual.state == State::Infected {
-                individual.infected_for += dt;
-                if individual.infected_for >= self.time_to_heal {
+        self.ctx.clear_rect(0.0, 0.0, self.width, self.height);
+
+        for i in 0..self.individuals.len() {
+            // healing / dying
+            if self.individuals[i].state == State::Infected {
+                self.individuals[i].infected_for += dt;
+                if self.individuals[i].infected_for >= self.time_to_heal {
                     let r = js_sys::Math::random();
                     if r <= DEATH_RATE {
-                        individual.state = State::Dead;
+                        self.individuals[i].state = State::Dead;
                     } else {
-                        individual.state = State::Cured;
+                        self.individuals[i].state = State::Cured;
                     }
                 }
             }
-        }
 
-        for i in 0..self.individuals.len() {
+            // movement
+            self.individuals[i].update_position(dt, self.width, self.height);
+
+            // infecting
             for j in 0..i {
                 if self.individuals[i].touches(&self.individuals[j]) {
                     let state_a = self.individuals[i].state;
@@ -188,8 +192,8 @@ impl Simulation {
                         self.individuals[j].state = State::Infected;
                     }
 
-                    // elastic collision
                     if state_a != State::Dead && state_b != State::Dead {
+                        // elastic collision
                         let e = (self.individuals[j].pos - self.individuals[i].pos).normalized();
 
                         // split velocities into parallel and perpendicular portions
@@ -206,16 +210,17 @@ impl Simulation {
                         // TODO: dead people are ghosts
                     }
 
-                    self.individuals[i].update_position(dt, self.width, self.height);
-                    self.individuals[j].update_position(dt, self.width, self.height);
+                    // make sure they are not touching anymore in the next step
+                    while {
+                        self.individuals[i].update_position(dt, self.width, self.height);
+                        self.individuals[j].update_position(dt, self.width, self.height);
+
+                        self.individuals[i].touches(&self.individuals[j])
+                    } {}
                 }
             }
-        }
 
-        self.ctx.clear_rect(0.0, 0.0, self.width, self.height);
-
-        for individual in &self.individuals {
-            self.ctx.set_fill_style(match individual.state {
+            self.ctx.set_fill_style(match self.individuals[i].state {
                 State::Healthy => {
                     total_healthy += 1;
                     &self.color_healthy
@@ -234,7 +239,7 @@ impl Simulation {
             });
 
             self.ctx.begin_path();
-            self.ctx.arc(individual.pos.x, individual.pos.y, INDIVIDUAL_RADIUS, 0.0, 2.0 * f64::consts::PI).unwrap();
+            self.ctx.arc(self.individuals[i].pos.x, self.individuals[i].pos.y, INDIVIDUAL_RADIUS, 0.0, 2.0 * f64::consts::PI).unwrap();
             self.ctx.fill();
         }
 
@@ -244,7 +249,6 @@ impl Simulation {
         self.ctx.set_fill_style(&self.color_text);
         self.ctx.fill_text(text.as_ref(), text_x, text_y).unwrap();
     }
-
 }
 
 #[wasm_bindgen(start)]
