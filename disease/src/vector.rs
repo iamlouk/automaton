@@ -1,40 +1,18 @@
 // only 2-dimensional for now
 
-use std::ops::Add;
-use std::ops::Sub;
-use std::ops::Mul;
+use std::ops::{Add, Sub, Mul};
+use std::ops::{AddAssign, SubAssign};
 
+#[derive(Clone, Copy)]
 pub struct Vector {
     pub x: f64,
     pub y: f64,
 }
 
 impl Vector {
-    pub fn add(&mut self, other: &Vector) -> &mut Vector {
-        self.x += other.x;
-        self.y += other.y;
-        self
-    }
-
-    pub fn sub(&mut self, other: &Vector) -> &mut Vector {
-        self.add(&other.copy().scale(-1.0))
-    }
 
     pub fn dot(&self, other: &Vector) -> f64 {
         self.x * other.x + self.y * other.y
-    }
-
-    pub fn scale(&mut self, other: f64) -> &mut Vector {
-        self.x *= other;
-        self.y *= other;
-        self
-    }
-
-    pub fn copy(&self) -> Vector {
-        Vector {
-            x: self.x,
-            y: self.y,
-        }
     }
 
     // view as 3-dim vectors (x, y, 0) and return z
@@ -50,13 +28,12 @@ impl Vector {
         self.square().sqrt()
     }
 
-    pub fn normalize(&mut self) -> &mut Vector {
-        self.scale(1.0 / self.mag());
-        self
+    pub fn normalized(&self) -> Vector {
+        *self * (1.0 / self.mag())
     }
 }
 
-impl Add for &Vector {
+impl Add for Vector {
     type Output = Vector;
 
     fn add(self, other: Self) -> Vector {
@@ -67,7 +44,13 @@ impl Add for &Vector {
     }
 }
 
-impl Sub for &Vector {
+impl AddAssign for Vector {
+    fn add_assign(&mut self, other: Self) {
+        *self = *self + other;
+    }
+}
+
+impl Sub for Vector {
     type Output = Vector;
 
     fn sub(self, other: Self) -> Vector {
@@ -78,22 +61,27 @@ impl Sub for &Vector {
     }
 }
 
-impl Mul for Vector {
+impl SubAssign for Vector {
+    fn sub_assign(&mut self, other: Self) {
+        *self = *self - other;
+    }
+}
+
+impl Mul<Vector> for Vector {
     type Output = f64;
 
-    fn mul(self, other: Self) -> f64 {
+    fn mul(self, other: Self) -> Self::Output {
         self.dot(&other)
     }
 }
 
-/*
-impl Mul for &Vector {
+impl Mul<f64> for Vector {
     type Output = Vector;
 
-    fn mul(self, f: f64) -> Vector {
-        let res = self.copy();
-        res.scale(f);
-        res
+    fn mul(self, f: f64) -> Self::Output {
+        Vector {
+            x: self.x * f,
+            y: self.y * f
+        }
     }
 }
-*/

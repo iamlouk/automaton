@@ -34,7 +34,7 @@ impl Individual {
             return;
         }
 
-        self.pos.add(self.vel.copy().scale(dt));
+        self.pos += (self.vel * dt);
 
         let x_too_small = self.pos.x < INDIVIDUAL_RADIUS;
         let x_too_big = self.pos.x + INDIVIDUAL_RADIUS > width;
@@ -64,7 +64,7 @@ impl Individual {
     }
 
     fn touches(&self, other: &Individual) -> bool {
-        (&self.pos - &other.pos).mag() < INDIVIDUAL_RADIUS * 2.0
+        (self.pos - other.pos).mag() < INDIVIDUAL_RADIUS * 2.0
     }
 }
 
@@ -88,9 +88,8 @@ fn random_normalized_vec() -> Vector {
     let x: f64 = js_sys::Math::random() * 2.0 - 1.0;
     let y: f64 = js_sys::Math::random() * 2.0 - 1.0;
 
-    let mut result = Vector { x, y, };
-    result.normalize();
-    result
+    let result = Vector { x, y, };
+    result.normalized()
 }
 
 fn find_partition(n: i32) -> (usize, usize) {
@@ -130,8 +129,8 @@ impl Simulation {
                 };
 
                 let pos = Vector {
-                    x: 50.0 + (width - 100.0) * (row as f64 / cols as f64),
-                    y: 50.0 + (height - 100.0) * (col as f64 / rows as f64),
+                    x: 50.0 + (width  - 100.0) * (col as f64 / cols as f64),
+                    y: 50.0 + (height - 100.0) * (row as f64 / rows as f64),
                 };
 
                 individuals.push(Individual {
@@ -191,19 +190,18 @@ impl Simulation {
 
                     // elastic collision
                     if state_a != State::Dead && state_b != State::Dead {
-                        let mut e = &self.individuals[j].pos - &self.individuals[i].pos;
-                        e.normalize();
+                        let e = (self.individuals[j].pos - self.individuals[i].pos).normalized();
 
                         // split velocities into parallel and perpendicular portions
                         let a_par = self.individuals[i].vel.dot(&e); // parallel scalar
-                        self.individuals[i].vel.sub(e.copy().scale(a_par)); // perpendicular vector
+                        self.individuals[i].vel -= e * a_par; // perpendicular vector
                         let b_par = self.individuals[j].vel.dot(&e); // parallel scalar
-                        self.individuals[j].vel.sub(e.copy().scale(b_par)); // perpendicular vector
+                        self.individuals[j].vel -= e * b_par; // perpendicular vector
                        
                         // simply switch the parralel parts (because all masses are equal)
                         // and assemble the new velocity vectors
-                        self.individuals[i].vel.add(e.copy().scale(b_par));
-                        self.individuals[j].vel.add(e.copy().scale(a_par));
+                        self.individuals[i].vel += e * b_par;
+                        self.individuals[j].vel += e * a_par;
                     } else {
                         // TODO: dead people are ghosts
                     }
