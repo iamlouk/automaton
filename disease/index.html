@@ -31,15 +31,8 @@
 
 			let sim = Simulation.new(canvas.width, canvas.height)
 
-			// let frame = 0
 			let step = () => {
-				let stats = sim.step()
-
-				/*
-				if (++frame % 20 == 0) {
-					console.info(`Frame #${frame}: healthy=${stats[0]}, infected=${stats[1]}, cured=${stats[2]}`)
-				}
-				*/
+				sim.step()
 
 				window.requestAnimationFrame(step)
 			}

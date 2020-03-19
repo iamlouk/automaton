@@ -7,6 +7,7 @@ const INDIVIDUAL_RADIUS: f64 = 7.5;
 const TIME_TO_HEAL: i32 = 500;
 const POPULATION_DENSITY: f64 = 15.0;
 const SPEED: f64 = 2.5;
+const DEATH_RATE: f64 = 0.0;
 
 #[wasm_bindgen]
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -30,6 +31,10 @@ pub struct Individual {
 
 impl Individual {
     fn update_position(&mut self, width: f64, height: f64) {
+        if self.state == State::Dead {
+            return;
+        }
+
         self.x += self.movement_x;
         self.y += self.movement_y;
 
@@ -135,18 +140,22 @@ impl Simulation {
         }
     }
 
-    pub fn step(&mut self) -> Vec<i32> {
+    pub fn step(&mut self) {
         let mut total_healthy = 0;
         let mut total_infected = 0;
         let mut total_cured = 0;
-        let mut total_dead = 0;
 
         for individual in &mut self.individuals {
             individual.update_position(self.width, self.height);
             if individual.state == State::Infected {
                 individual.infected_for += 1;
                 if individual.infected_for == TIME_TO_HEAL {
-                    individual.state = State::Cured;
+                    let r = js_sys::Math::random();
+                    if r <= DEATH_RATE {
+                        individual.state = State::Dead;
+                    } else {
+                        individual.state = State::Cured;
+                    }
                 }
             }
         }
@@ -157,17 +166,24 @@ impl Simulation {
                     let state_a = self.individuals[i].state;
                     let state_b = self.individuals[j].state;
 
-                    if (state_a == State::Infected || state_b == State::Infected) && !(state_a == State::Cured || state_b == State::Cured) {
+                    if (state_a == State::Infected || state_b == State::Infected) && (state_a == State::Healthy || state_b == State::Healthy) {
                         self.individuals[i].state = State::Infected;
                         self.individuals[j].state = State::Infected;
                     }
 
-                    let tmp_x = self.individuals[i].movement_x;
-                    let tmp_y = self.individuals[i].movement_y;
-                    self.individuals[i].movement_x = self.individuals[j].movement_x;
-                    self.individuals[i].movement_y = self.individuals[j].movement_y;
-                    self.individuals[j].movement_x = tmp_x;
-                    self.individuals[j].movement_y = tmp_y;
+                    if state_a != State::Dead && state_b != State::Dead {
+                        let tmp_x = self.individuals[i].movement_x;
+                        let tmp_y = self.individuals[i].movement_y;
+                        self.individuals[i].movement_x = self.individuals[j].movement_x;
+                        self.individuals[i].movement_y = self.individuals[j].movement_y;
+                        self.individuals[j].movement_x = tmp_x;
+                        self.individuals[j].movement_y = tmp_y;
+                    } else {
+                        self.individuals[i].movement_x *= -1.0;
+                        self.individuals[i].movement_y *= -1.0;
+                        self.individuals[j].movement_x *= -1.0;
+                        self.individuals[j].movement_y *= -1.0;
+                    }
 
                     self.individuals[i].update_position(self.width, self.height);
                     self.individuals[j].update_position(self.width, self.height);
@@ -192,7 +208,6 @@ impl Simulation {
                     &self.color_cured
                 },
                 State::Dead => {
-                    total_dead += 1;
                     &self.color_dead
                 }
             });
@@ -207,8 +222,9 @@ impl Simulation {
         let text = format!("#healthy: {}, #infected: {}, #cured: {}", total_healthy, total_infected, total_cured);
         self.ctx.set_fill_style(&self.color_text);
         self.ctx.fill_text(text.as_ref(), text_x, text_y).unwrap();
-
-        vec![total_healthy, total_infected, total_cured, total_dead]
     }
 
 }
+
+#[wasm_bindgen(start)]
+pub fn start() {}
