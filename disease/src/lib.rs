@@ -34,7 +34,7 @@ impl Individual {
             return;
         }
 
-        self.pos += (self.vel * dt);
+        self.pos += self.vel * dt;
 
         let x_too_small = self.pos.x < INDIVIDUAL_RADIUS;
         let x_too_big = self.pos.x + INDIVIDUAL_RADIUS > width;
@@ -158,7 +158,7 @@ impl Simulation {
         }
     }
 
-    pub fn step(&mut self, dt: f64) {
+    pub fn step(&mut self, dt: f64) -> Vec<i32> {
         let mut total_healthy = 0;
         let mut total_infected = 0;
         let mut total_cured = 0;
@@ -239,10 +239,12 @@ impl Simulation {
         }
 
         let text_x = 10.0;
-        let text_y = self.height - 30.0;
+        let text_y = self.height - 70.0;
         let text = format!("#healthy: {}, #infected: {}, #cured: {}", total_healthy, total_infected, total_cured);
         self.ctx.set_fill_style(&self.color_text);
         self.ctx.fill_text(text.as_ref(), text_x, text_y).unwrap();
+
+        vec![total_healthy, total_infected, total_cured]
     }
 
 }
