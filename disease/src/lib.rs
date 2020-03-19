@@ -6,7 +6,6 @@ use wasm_bindgen::{JsCast, JsValue};
 const INDIVIDUAL_RADIUS: f64 = 7.5;
 const TIME_TO_HEAL: i32 = 500;
 const POPULATION_DENSITY: f64 = 15.0;
-const SPEED: f64 = 2.5;
 const DEATH_RATE: f64 = 0.0;
 
 #[wasm_bindgen]
@@ -30,26 +29,26 @@ pub struct Individual {
 }
 
 impl Individual {
-    fn update_position(&mut self, width: f64, height: f64) {
+    fn update_position(&mut self, dt: f64, width: f64, height: f64) {
         if self.state == State::Dead {
             return;
         }
 
-        self.x += self.movement_x;
-        self.y += self.movement_y;
+        self.x += self.movement_x * dt;
+        self.y += self.movement_y * dt;
 
         if self.x < INDIVIDUAL_RADIUS || self.x + INDIVIDUAL_RADIUS >= width {
             self.movement_x *= -1.;
-            self.x += self.movement_x;
+            self.x += self.movement_x * dt;
         }
 
         if self.y < INDIVIDUAL_RADIUS || self.y + INDIVIDUAL_RADIUS >= height {
             self.movement_y *= -1.;
-            self.y += self.movement_y;
+            self.y += self.movement_y * dt;
         }
     }
 
-    fn toches(&self, other: &Individual) -> bool {
+    fn touches(&self, other: &Individual) -> bool {
         let d_x = self.x - other.x;
         let d_y = self.y - other.y;
         let distance = (d_x*d_x + d_y*d_y).sqrt();
@@ -76,7 +75,7 @@ fn random_normalized_vec() -> (f64, f64) {
     let x: f64 = js_sys::Math::random() * 2.0 - 1.0;
     let y: f64 = js_sys::Math::random() * 2.0 - 1.0;
 
-    let len = (x*x + y*y).sqrt() * (1.0 / SPEED);
+    let len = (x*x + y*y).sqrt();
 
     (x / len, y / len)
 }
@@ -140,13 +139,13 @@ impl Simulation {
         }
     }
 
-    pub fn step(&mut self) {
+    pub fn step(&mut self, dt: f64) {
         let mut total_healthy = 0;
         let mut total_infected = 0;
         let mut total_cured = 0;
 
         for individual in &mut self.individuals {
-            individual.update_position(self.width, self.height);
+            individual.update_position(dt, self.width, self.height);
             if individual.state == State::Infected {
                 individual.infected_for += 1;
                 if individual.infected_for == TIME_TO_HEAL {
@@ -162,7 +161,7 @@ impl Simulation {
 
         for i in 0..self.individuals.len() {
             for j in 0..i {
-                if self.individuals[i].toches(&self.individuals[j]) {
+                if self.individuals[i].touches(&self.individuals[j]) {
                     let state_a = self.individuals[i].state;
                     let state_b = self.individuals[j].state;
 
@@ -185,8 +184,8 @@ impl Simulation {
                         self.individuals[j].movement_y *= -1.0;
                     }
 
-                    self.individuals[i].update_position(self.width, self.height);
-                    self.individuals[j].update_position(self.width, self.height);
+                    self.individuals[i].update_position(dt, self.width, self.height);
+                    self.individuals[j].update_position(dt, self.width, self.height);
                 }
             }
         }
