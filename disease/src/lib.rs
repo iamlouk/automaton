@@ -4,7 +4,6 @@ use wasm_bindgen::prelude::*;
 use wasm_bindgen::{JsCast, JsValue};
 
 const INDIVIDUAL_RADIUS: f64 = 7.5;
-const TIME_TO_HEAL: i32 = 500;
 const POPULATION_DENSITY: f64 = 15.0;
 const DEATH_RATE: f64 = 0.0;
 
@@ -25,7 +24,7 @@ pub struct Individual {
     movement_x: f64,
     movement_y: f64,
     state: State,
-    infected_for: i32
+    infected_for: f64
 }
 
 impl Individual {
@@ -64,6 +63,8 @@ pub struct Simulation {
     individuals: Vec<Individual>,
     ctx: web_sys::CanvasRenderingContext2d,
 
+    time_to_heal: f64,
+
     color_healthy: JsValue,
     color_infected: JsValue,
     color_cured: JsValue,
@@ -82,7 +83,7 @@ fn random_normalized_vec() -> (f64, f64) {
 
 #[wasm_bindgen]
 impl Simulation {
-    pub fn new(width: f64, height: f64) -> Self {
+    pub fn new(width: f64, height: f64, time_to_heal: f64, scale: f64) -> Self {
         let document = web_sys::window().unwrap().document().unwrap();
         let canvas = document.get_element_by_id("canvas").unwrap();
         let canvas: web_sys::HtmlCanvasElement = canvas
@@ -120,7 +121,7 @@ impl Simulation {
                     movement_x,
                     movement_y,
                     state,
-                    infected_for: 0
+                    infected_for: 0.0
                 })
             }
         }
@@ -130,6 +131,8 @@ impl Simulation {
             height,
             individuals,
             ctx,
+
+            time_to_heal,
 
             color_cured: JsValue::from_str("#00ff00"),
             color_dead: JsValue::from_str("#000000"),
@@ -147,8 +150,8 @@ impl Simulation {
         for individual in &mut self.individuals {
             individual.update_position(dt, self.width, self.height);
             if individual.state == State::Infected {
-                individual.infected_for += 1;
-                if individual.infected_for == TIME_TO_HEAL {
+                individual.infected_for += dt;
+                if individual.infected_for >= self.time_to_heal {
                     let r = js_sys::Math::random();
                     if r <= DEATH_RATE {
                         individual.state = State::Dead;
