@@ -1,13 +1,13 @@
 
+mod vector;
+
 use std::{u32, f64};
 use wasm_bindgen::prelude::*;
 use wasm_bindgen::{JsCast, JsValue};
 
-mod vector;
 pub use crate::vector::Vector;
 
 const INDIVIDUAL_RADIUS: f64 = 7.5;
-const POPULATION_DENSITY: f64 = 15.0;
 const DEATH_RATE: f64 = 0.0;
 
 #[wasm_bindgen]
@@ -93,9 +93,13 @@ fn random_normalized_vec() -> Vector {
     result
 }
 
+fn find_partition(n: i32) -> (usize, usize) {
+    (n as usize, n as usize)
+}
+
 #[wasm_bindgen]
 impl Simulation {
-    pub fn new(width: f64, height: f64, time_to_heal: f64, scale: f64) -> Self {
+    pub fn new(width: f64, height: f64, time_to_heal: f64, scale: f64, population: i32) -> Self {
         let document = web_sys::window().unwrap().document().unwrap();
         let canvas = document.get_element_by_id("canvas").unwrap();
         let canvas: web_sys::HtmlCanvasElement = canvas
@@ -112,9 +116,9 @@ impl Simulation {
         
         ctx.set_font("20px monospace");
 
-        let rows = (height / INDIVIDUAL_RADIUS / POPULATION_DENSITY) as usize;
-        let cols = (width / INDIVIDUAL_RADIUS / POPULATION_DENSITY) as usize;
+        let (rows, cols) = find_partition(population);
         let mut individuals = Vec::with_capacity(rows * cols);
+
         for row in 0..rows {
             for col in 0..cols {
                 let vel = random_normalized_vec();
@@ -126,8 +130,8 @@ impl Simulation {
                 };
 
                 let pos = Vector {
-                    x: 50.0 + (width - 100.0) * (row as f64 / rows as f64),
-                    y: 50.0 + (height - 100.0) * (col as f64 / cols as f64),
+                    x: 50.0 + (width - 100.0) * (row as f64 / cols as f64),
+                    y: 50.0 + (height - 100.0) * (col as f64 / rows as f64),
                 };
 
                 individuals.push(Individual {

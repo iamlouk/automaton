@@ -45,7 +45,7 @@
 	<canvas id="canvas"></canvas>
 
 	<div id="settings">
-		Some settings only apply when restarting the simulation (<a href="index.html">reload</a>)
+		Some settings only apply when restarting the simulation (<button id="restart-sim">restart</button>)
 		<table>
 			<tr>
 				<td><label for="speed">Speed: </label></td>
@@ -57,7 +57,11 @@
 			</tr>
 			<tr>
 				<td><label for="ttl">Time To Heal: </label></td>
-				<td><input type="range" id="ttl" min="100" max="10000" step="1" /></td>
+				<td><input type="range" id="ttl" min="100" max="2000" step="1" /></td>
+			</tr>
+			<tr>
+				<td><label for="population">Population: </label></td>
+				<td><input type="range" id="population" min="1" max="20" step="1" /></td>
 			</tr>
 		</table>
 	</div>
@@ -90,19 +94,15 @@
 			return pixels
 		}
 
-		let speed = getStoredNumberOrDefault('speed', 0.1)
-		let scale = getStoredNumberOrDefault('scale', 1)
-		let timeToHeal = getStoredNumberOrDefault('ttl', 2000)
+		let startNewSimulation = () => {
+			console.info(`Settings: speed=${speed}, scale=${scale}, ttl=${timeToHeal}, population=${population*population}`)
 
-		document.addEventListener('DOMContentLoaded', async (event) => {
 			canvas.width = canvas.offsetWidth
 			canvas.height = canvas.offsetHeight
 
-			await init()
-
 			const ppm = pixelsPerMeter()
 
-			const sim = Simulation.new(canvas.width, canvas.height, timeToHeal, scale)
+			const sim = Simulation.new(canvas.width, canvas.height, timeToHeal, scale, population)
 
 			let prev = Date.now()
 
@@ -113,11 +113,30 @@
 
 				sim.step(dt * speed)
 
-				window.requestAnimationFrame(step)
+				requestedNextFrame = window.requestAnimationFrame(step)
 			}
 
 			step()
+		}
+
+		let speed = getStoredNumberOrDefault('speed', 0.1)
+		let scale = getStoredNumberOrDefault('scale', 1)
+		let timeToHeal = getStoredNumberOrDefault('ttl', 2000)
+		let population = getStoredNumberOrDefault('population', 10)
+
+		let requestedNextFrame = null
+		document.addEventListener('DOMContentLoaded', async (event) => {
+			await init()
+
+			startNewSimulation()
 		})
+
+		settingsDiv.querySelector('#restart-sim').addEventListener('click', event => {
+			window.cancelAnimationFrame(requestedNextFrame)
+
+			startNewSimulation()
+		})
+
 
 		const speedSlider = settingsDiv.querySelector('#speed')
 		speedSlider.value = speed.toString()
@@ -136,9 +155,17 @@
 		const ttlSlider = settingsDiv.querySelector('#ttl')
 		ttlSlider.value = timeToHeal.toString()
 		ttlSlider.addEventListener('change', event => {
-			ttl = Number.parseFloat(ttlSlider.value)
+			timeToHeal = Number.parseFloat(ttlSlider.value)
 			window.localStorage.setItem('ttl', ttlSlider.value)
 		})
+
+		const populationSlider = settingsDiv.querySelector('#population')
+		populationSlider.value = population.toString()
+		populationSlider.addEventListener('change', event => {
+			population = Number.parseInt(populationSlider.value)
+			console.log(population)
+			window.localStorage.setItem('population', populationSlider.value)
+		})		
 
 	</script>
 </html>
