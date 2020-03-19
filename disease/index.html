@@ -11,9 +11,19 @@
 		height: 100%;
 	}
 
-	canvas {
+	#canvas {
 		width: 100%;
 		height: 100%;
+	}
+
+	#ratios-canvas {
+		position: fixed;
+		bottom: 0px;
+		left: 0px;
+		height: 50px;
+		width: 100%;
+		z-index: 5;
+		opacity: 0.5;
 	}
 
 	#settings {
@@ -43,6 +53,8 @@
 	</style>
 </head>
 	<canvas id="canvas"></canvas>
+
+	<canvas id="ratios-canvas"></canvas>
 
 	<div id="settings">
 		Some settings only apply when restarting the simulation (<button id="restart-sim">restart</button>)
@@ -76,6 +88,50 @@
 			settingsDiv.classList.toggle('is-hidden')
 		})
 
+		let requestedNextFrame = null
+		let requestedInterval = null
+
+		const initRatiosCanvas = () => {
+			const canvas = document.getElementById('ratios-canvas')
+			canvas.width = canvas.offsetWidth
+			canvas.height = canvas.offsetHeight
+
+			const ctx = canvas.getContext('2d')
+			ctx.clearRect(0, 0, canvas.width, canvas.height)
+
+			let stats = null
+			let x = 0
+			const dx = 1
+
+			const healthyColor  = '#0099ff'
+			const infectedColor = '#ff3300'
+			const curedColor    = '#00ff00'
+
+			const update = () => {
+				const total    = stats[0] + stats[1] + stats[2]
+				const healthy  = (stats[0] / total) * canvas.height
+				const infected = (stats[1] / total) * canvas.height
+				const cured    = (stats[2] / total) * canvas.height
+
+				ctx.fillStyle = healthyColor
+				ctx.fillRect(x, 0, dx, healthy)
+
+				ctx.fillStyle = curedColor
+				ctx.fillRect(x, healthy, dx, cured)
+
+				ctx.fillStyle = infectedColor
+				ctx.fillRect(x, healthy + cured, dx, infected)
+
+				x += dx
+			}
+
+			requestedInterval = setInterval(update, 100)
+
+			return s => {
+				stats = s
+			}
+		}
+
 		const getStoredNumberOrDefault = (key, def) => {
 			const item = window.localStorage.getItem(key)
 			if (item == undefined) {
@@ -94,13 +150,15 @@
 			return pixels
 		}
 
-		let startNewSimulation = () => {
+		const startNewSimulation = () => {
 			console.info(`Settings: speed=${speed}, scale=${scale}, ttl=${timeToHeal}, population=${population*population}`)
 
 			canvas.width = canvas.offsetWidth
 			canvas.height = canvas.offsetHeight
 
 			const ppm = pixelsPerMeter()
+
+			const updateRatios = initRatiosCanvas()
 
 			const sim = Simulation.new(canvas.width, canvas.height, timeToHeal, scale, population)
 
@@ -111,7 +169,9 @@
 				const dt = now - prev
 				prev = now
 
-				sim.step(dt * speed)
+				const stats = sim.step(dt * speed)
+
+				updateRatios(stats)
 
 				requestedNextFrame = window.requestAnimationFrame(step)
 			}
@@ -124,7 +184,6 @@
 		let timeToHeal = getStoredNumberOrDefault('ttl', 2000)
 		let population = getStoredNumberOrDefault('population', 10)
 
-		let requestedNextFrame = null
 		document.addEventListener('DOMContentLoaded', async (event) => {
 			await init()
 
@@ -133,6 +192,7 @@
 
 		settingsDiv.querySelector('#restart-sim').addEventListener('click', event => {
 			window.cancelAnimationFrame(requestedNextFrame)
+			clearInterval(requestedInterval)
 
 			startNewSimulation()
 		})
