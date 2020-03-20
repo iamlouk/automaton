@@ -20,12 +20,12 @@ impl Vector {
         self.x * other.y - self.y * other.x
     }
 
-    pub fn square(&self) -> f64 {
+    pub fn squared(&self) -> f64 {
         self.dot(&self)
     }
 
     pub fn mag(&self) -> f64 {
-        self.square().sqrt()
+        self.squared().sqrt()
     }
 
     pub fn normalized(&self) -> Vector {
@@ -83,6 +83,14 @@ impl Mul<f64> for Vector {
             x: self.x * f,
             y: self.y * f
         }
+    }
+}
+
+impl Mul<Vector> for f64 {
+    type Output = Vector;
+
+    fn mul(self, v: Vector) -> Vector {
+        v * self
     }
 }
 
