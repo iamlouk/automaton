@@ -1,0 +1,137 @@
+<html>
+<head>
+	<meta content="text/html;charset=utf-8" http-equiv="Content-Type"/>
+	<title>Inverse-Square Law!</title>
+	<style>
+
+	html, body {
+		margin: 0px;
+		padding: 0px;
+		width: 100%;
+		height: 100%;
+	}
+
+	#canvas {
+		width: 100%;
+		height: 100%;
+	}
+
+	#ratios-canvas {
+		position: fixed;
+		bottom: 0px;
+		left: 0px;
+		height: 50px;
+		width: 100%;
+		z-index: 5;
+	}
+
+	#settings {
+		font-family: monospace;
+		position: fixed;
+		top: 10px;
+		left: 10px;
+		margin: 0px;
+		border: 1px solid #555555;
+		border-radius: 10px;
+		padding: 5px;
+		z-index: 10;
+	}
+
+	:not(.is-hidden) {
+		visibility: visible;
+		opacity: 1;
+		transition: opacity 0.5s linear;
+	}
+
+	.is-hidden {
+		visibility: hidden;
+		opacity: 0;
+		transition: visibility 0s 0.5s, opacity 0.5s linear;
+	}
+
+	</style>
+</head>
+<body>
+	<canvas id="canvas"></canvas>
+
+	<div id="settings">
+		<table>
+			<tr>
+				<td><label for="speed">Speed: </label></td>
+				<td><input type="range" id="speed" min="0.01" max="1" step="0.01" /></td>
+			</tr>
+		</table>
+	</div>
+
+	<script type="module">
+		import init, { Simulation } from './pkg/inverse-square-law.js'
+
+		const settingsDiv = document.querySelector('#settings')
+
+		const canvas = document.getElementById('canvas')
+		canvas.addEventListener('click', event => {
+			settingsDiv.classList.toggle('is-hidden')
+		})
+
+		let requestedNextFrame = null
+		let sim
+
+		let speed = getStoredNumberOrDefault('speed', 1.0)
+
+		const pixelsPerMeter = () => {
+			const elm = document.createElement('div')
+			elm.style.width = "1000cm"
+			document.body.appendChild(elm)
+			const pixels = elm.offsetWidth
+			elm.remove()
+			return pixels
+		}
+
+		const startNewSimulation = () => {
+			canvas.width = canvas.offsetWidth
+			canvas.height = canvas.offsetHeight
+
+			const ppm = pixelsPerMeter()
+
+			sim = Simulation.new(canvas.width, canvas.height)
+			sim.set_speed(speed)
+
+			let prev = Date.now()
+
+			const step = () => {
+				const now = Date.now()
+				const dt = now - prev
+				prev = now
+
+				sim.step(dt * speed)
+
+				requestedNextFrame = window.requestAnimationFrame(step)
+			}
+
+			step()
+		}
+
+		document.addEventListener('DOMContentLoaded', async (event) => {
+			await init()
+
+			startNewSimulation()
+		})
+
+		settingsDiv.querySelector('#restart-sim').addEventListener('click', event => {
+			window.cancelAnimationFrame(requestedNextFrame)
+
+			startNewSimulation()
+		})
+
+
+		const speedSlider = settingsDiv.querySelector('#speed')
+		speedSlider.value = speed.toString()
+		speedSlider.addEventListener('change', event => {
+			speed = Number.parseFloat(speedSlider.value)
+			sim.set_speed(speed)
+			window.localStorage.setItem('speed', speedSlider.value)
+		})
+
+	</script>
+</body>
+</html>
