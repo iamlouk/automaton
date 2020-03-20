@@ -37,6 +37,17 @@ pub struct Particle {
     mass: f64,
 }
 
+impl Particle {
+    fn get_force_from(&self, other: &Particle, k: f64) -> Vector {
+        let dpos = other.pos - self.pos;
+        -k * self.charge * other.charge * dpos.normalized() / dpos.squared()
+    }
+
+    fn get_acc_from(&self, other: &Particle, k: f64) -> Vector {
+        self.get_force_from(other, k) / self.mass
+    }
+}
+
 #[wasm_bindgen]
 impl Simulation {
     pub fn new(width: f64, height: f64) -> Self {
@@ -56,13 +67,32 @@ impl Simulation {
         
         ctx.set_font("20px monospace");
 
-        let mut particles = Vec::<Particle>::new();
+        let mut particles: Vec<Particle> = Vec::new();
+        let r = 5.0;
+        let q = 1.0;
+        let m = 1.0;
+        let particle1 = Particle {
+            radius: r,
+            pos: Vector { x: -3.0*r, y: 0.0,},
+            vel: Vector { x: 0.0, y: -1.0,},
+            charge: q,
+            mass: m,
+        };
+        let particle2 = Particle {
+            radius: r,
+            pos: Vector { x: 3.0*r, y: 0.0,},
+            vel: Vector { x: 0.0, y: 1.0,},
+            charge: -q,
+            mass: m,
+        };
+        particles.push(particle1);
+        particles.push(particle2);
 
         Simulation {
             width,
             height,
             ctx,
-            particles, //TODO add particles
+            particles,
             k: 1.0,
             speed: 1.0,
             color_pos_charge: JsValue::from_str("#ff3300"),
@@ -72,6 +102,23 @@ impl Simulation {
 
     pub fn step(&mut self, dt: f64) {
         self.ctx.clear_rect(0.0, 0.0, self.width, self.height);
+
+        for i in 0..self.particles.len() {
+            // calc acceleration for particle i
+            // by adding up the accelerations from each particle j!=i
+            let mut acc = Vector { x: 0.0, y: 0.0,};
+            for j in 0..self.particles.len() {
+                if i == j { continue; } // particle can't influence itself
+                acc += self.particles[i].get_acc_from(&self.particles[j], self.k);
+            }
+
+            // pos = 0.5*acc*dt^2 + vel*dt + pos_0
+            // vel = acc*dt + vel_0
+            acc *= dt;
+            let vel = self.particles[i].vel;
+            self.particles[i].pos += 0.5 * acc * dt + vel * dt;
+            self.particles[i].vel += acc;
+        }
     }
 
     pub fn set_speed(&mut self, speed: f64) {
