@@ -28,7 +28,7 @@ pub struct Simulation {
     color_neg_charge: JsValue
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone, Copy)]
 pub struct Particle {
     radius: f64,
     pos: Vector,
@@ -71,17 +71,18 @@ impl Simulation {
         let r = 5.0;
         let q = 1.0;
         let m = 1.0;
+        let speed_0 = 0.1;
         let particle1 = Particle {
             radius: r,
-            pos: Vector { x: -3.0*r, y: 0.0,},
-            vel: Vector { x: 0.0, y: -1.0,},
+            pos: Vector { x: 0.5*width - 3.0*r, y: 0.5*height,},
+            vel: Vector { x: 0.0, y: -speed_0,},
             charge: q,
             mass: m,
         };
         let particle2 = Particle {
             radius: r,
-            pos: Vector { x: 3.0*r, y: 0.0,},
-            vel: Vector { x: 0.0, y: 1.0,},
+            pos: Vector { x: 0.5*width + 3.0*r, y: 0.5*height,},
+            vel: Vector { x: 0.0, y: speed_0,},
             charge: -q,
             mass: m,
         };
@@ -118,6 +119,9 @@ impl Simulation {
             let vel = self.particles[i].vel;
             self.particles[i].pos += 0.5 * acc * dt + vel * dt;
             self.particles[i].vel += acc;
+
+            let cur_particle = self.particles[i];
+            self.render_particle(&cur_particle);
         }
     }
 
