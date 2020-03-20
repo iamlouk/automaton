@@ -17,13 +17,24 @@ pub struct Simulation {
     width: f64,
     height: f64,
     ctx: web_sys::CanvasRenderingContext2d,
+    
+    particles: Vec<Particle>,
+    k: f64, // the force constant (-G for gravity, 1/(2*tau*epsilon_0) for Coulomb's law)
 
-    speed: f64
+    speed: f64,
+}
+
+pub struct Particle {
+    radius: f64,
+    pos: Vector,
+    vel: Vector,
+    charge: f64,
+    mass: f64,
 }
 
 #[wasm_bindgen]
 impl Simulation {
-    pub fn new(width: f64, height: f64) -> Self {
+    pub fn new(width: f64, height: f64, k: f64) -> Self {
         let document = web_sys::window().unwrap().document().unwrap();
         let canvas = document.get_element_by_id("canvas").unwrap();
         let canvas: web_sys::HtmlCanvasElement = canvas
@@ -40,11 +51,15 @@ impl Simulation {
         
         ctx.set_font("20px monospace");
 
+        let mut particles = Vec<Particle>::new();
+
         Simulation {
             width,
             height,
             ctx,
-            speed: 1.0
+            particles, //TODO add particles
+            k,
+            speed: 1.0,
         }
     }
 
