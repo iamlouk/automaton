@@ -6,5 +6,9 @@
 - [Wireworld](./wireworld.html)
 
 ### Disease-Spread:
-- [Disease](./disease)
+- [Disease](./disease/index.html) (Developed together with [@BoostCookie](https://gitlab.com/BoostCookie))
+
+---
+
+Run local webserver: `python3 -m http.server --directory . 8080`.
 

@@ -2,25 +2,47 @@
 <html>
 <head>
 	<meta charset="utf-8">
-	<title>(Cellular) Automaton</title>
+	<title>Simulations...!</title>
+
+	<script src="https://cdnjs.cloudflare.com/ajax/libs/showdown/1.9.0/showdown.min.js"></script>
+	<!--
+	<script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.17.1/prism.min.js"></script>
+	<script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.17.1/components/prism-c.min.js"></script>
+	<script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.17.1/components/prism-bash.min.js"></script>
+	<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.17.1/themes/prism.css" crossorigin="anonymous" />
+	-->
+
 	<style media="screen">
-		main {
-			font-family: sans-serif;
-		}
-		a {
+		#markdown {
 			font-family: monospace;
+		}
+
+		a {
 			text-decoration: none;
+		}
+
+		:not(pre) code {
+			background-color: #e0e0e0;
+			border-radius: 5px;
+			padding-left: 5px;
+			padding-right: 5px;
 		}
 	</style>
 </head>
 <body>
-	<main>
-		<h3>(Cellular) Automaton!</h3>
-		<ul>
-			<li><a href="forest.html">Forest Simulator</a></li>
-			<li><a href="gameoflife.html">Conway's Game of Life</a></li>
-			<li><a href="wireworld.html">Wireworld</a></li>
-		</ul>
-	</main>
+	<div id="markdown">
+		Look at <a href="./README.md">README.md</a>
+	</div>
+	<script type="text/javascript">
+		const converter = new showdown.Converter();
+		const element = document.querySelector('#markdown');
+
+		fetch('./README.md')
+			.then(res => res.text())
+			.then(txt => {
+				element.innerHTML = converter.makeHtml(txt);
+				// Prism.highlightAll();
+			});
+	</script>
 </body>
 </html>

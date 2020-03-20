@@ -7,6 +7,12 @@ use wasm_bindgen::{JsCast, JsValue};
 
 pub use crate::vector::Vector;
 
+macro_rules! log {
+    ( $( $t:tt )* ) => {
+        web_sys::console::log_1(&format!( $( $t )* ).into());
+    }
+}
+
 const INDIVIDUAL_RADIUS: f64 = 7.5;
 const DEATH_RATE: f64 = 0.0;
 
@@ -254,4 +260,6 @@ impl Simulation {
 }
 
 #[wasm_bindgen(start)]
-pub fn start() {}
+pub fn start() {
+    log!("Hello Browser-Console!");
+}
