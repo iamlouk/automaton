@@ -8,7 +8,6 @@ use wasm_bindgen::{JsCast, JsValue};
 pub use crate::vector::Vector;
 
 const INDIVIDUAL_RADIUS: f64 = 7.5;
-const DEATH_RATE: f64 = 0.0;
 
 #[wasm_bindgen]
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -76,6 +75,7 @@ pub struct Simulation {
     ctx: web_sys::CanvasRenderingContext2d,
 
     time_to_heal: f64,
+    death_rate: f64,
 
     color_healthy: JsValue,
     color_infected: JsValue,
@@ -98,7 +98,7 @@ fn find_partition(n: i32) -> (usize, usize) {
 
 #[wasm_bindgen]
 impl Simulation {
-    pub fn new(width: f64, height: f64, time_to_heal: f64, scale: f64, population: i32) -> Self {
+    pub fn new(width: f64, height: f64, time_to_heal: f64, death_rate: f64, scale: f64, population: i32) -> Self {
         let document = web_sys::window().unwrap().document().unwrap();
         let canvas = document.get_element_by_id("canvas").unwrap();
         let canvas: web_sys::HtmlCanvasElement = canvas
@@ -149,6 +149,7 @@ impl Simulation {
             ctx,
 
             time_to_heal,
+            death_rate,
 
             color_cured: JsValue::from_str("#00ff00"),
             color_dead: JsValue::from_str("#000000"),
@@ -162,6 +163,7 @@ impl Simulation {
         let mut total_healthy = 0;
         let mut total_infected = 0;
         let mut total_cured = 0;
+        let mut total_dead = 0;
 
         self.ctx.clear_rect(0.0, 0.0, self.width, self.height);
 
@@ -171,8 +173,9 @@ impl Simulation {
                 self.individuals[i].infected_for += dt;
                 if self.individuals[i].infected_for >= self.time_to_heal {
                     let r = js_sys::Math::random();
-                    if r <= DEATH_RATE {
+                    if r <= self.death_rate {
                         self.individuals[i].state = State::Dead;
+                        self.individuals[i].vel = Vector { x: 0.0, y: 0.0};
                     } else {
                         self.individuals[i].state = State::Cured;
                     }
@@ -192,22 +195,24 @@ impl Simulation {
                         self.individuals[j].state = State::Infected;
                     }
 
+                    let e = (self.individuals[j].pos - self.individuals[i].pos).normalized();
+
+                    // split velocities into parallel and perpendicular portions
+                    let a_par = self.individuals[i].vel.dot(&e); // parallel scalar
+                    self.individuals[i].vel -= e * a_par; // perpendicular vector
+                    let b_par = self.individuals[j].vel.dot(&e); // parallel scalar
+                    self.individuals[j].vel -= e * b_par; // perpendicular vector
+                       
                     if state_a != State::Dead && state_b != State::Dead {
                         // elastic collision
-                        let e = (self.individuals[j].pos - self.individuals[i].pos).normalized();
-
-                        // split velocities into parallel and perpendicular portions
-                        let a_par = self.individuals[i].vel.dot(&e); // parallel scalar
-                        self.individuals[i].vel -= e * a_par; // perpendicular vector
-                        let b_par = self.individuals[j].vel.dot(&e); // parallel scalar
-                        self.individuals[j].vel -= e * b_par; // perpendicular vector
-                       
                         // simply switch the parralel parts (because all masses are equal)
                         // and assemble the new velocity vectors
                         self.individuals[i].vel += e * b_par;
                         self.individuals[j].vel += e * a_par;
                     } else {
-                        // TODO: dead people are ghosts
+                        // dead people are like walls
+                        self.individuals[i].vel -= e * a_par;
+                        self.individuals[j].vel -= e * b_par;
                     }
 
                     // make sure they are not touching anymore in the next step
@@ -234,6 +239,7 @@ impl Simulation {
                     &self.color_cured
                 },
                 State::Dead => {
+                    total_dead += 1;
                     &self.color_dead
                 }
             });
@@ -245,11 +251,11 @@ impl Simulation {
 
         let text_x = 10.0;
         let text_y = self.height - 70.0;
-        let text = format!("#healthy: {}, #infected: {}, #cured: {}", total_healthy, total_infected, total_cured);
+        let text = format!("#healthy: {}, #infected: {}, #cured: {}, #dead: {}", total_healthy, total_infected, total_cured, total_dead);
         self.ctx.set_fill_style(&self.color_text);
         self.ctx.fill_text(text.as_ref(), text_x, text_y).unwrap();
 
-        vec![total_healthy, total_infected, total_cured]
+        vec![total_healthy, total_infected, total_cured, total_dead]
     }
 }
 
