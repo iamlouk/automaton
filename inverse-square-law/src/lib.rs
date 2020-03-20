@@ -12,6 +12,7 @@ macro_rules! log {
         web_sys::console::log_1(&format!( $( $t )* ).into());
     }
 }
+
 #[wasm_bindgen]
 pub struct Simulation {
     width: f64,
@@ -22,8 +23,12 @@ pub struct Simulation {
     k: f64, // the force constant (-G for gravity, 1/(2*tau*epsilon_0) for Coulomb's law)
 
     speed: f64,
+
+    color_pos_charge: JsValue,
+    color_neg_charge: JsValue
 }
 
+#[derive(Debug)]
 pub struct Particle {
     radius: f64,
     pos: Vector,
@@ -34,7 +39,7 @@ pub struct Particle {
 
 #[wasm_bindgen]
 impl Simulation {
-    pub fn new(width: f64, height: f64, k: f64) -> Self {
+    pub fn new(width: f64, height: f64) -> Self {
         let document = web_sys::window().unwrap().document().unwrap();
         let canvas = document.get_element_by_id("canvas").unwrap();
         let canvas: web_sys::HtmlCanvasElement = canvas
@@ -51,15 +56,17 @@ impl Simulation {
         
         ctx.set_font("20px monospace");
 
-        let mut particles = Vec<Particle>::new();
+        let mut particles = Vec::<Particle>::new();
 
         Simulation {
             width,
             height,
             ctx,
             particles, //TODO add particles
-            k,
+            k: 1.0,
             speed: 1.0,
+            color_pos_charge: JsValue::from_str("#ff3300"),
+            color_neg_charge: JsValue::from_str("#0099ff")
         }
     }
 
@@ -69,6 +76,31 @@ impl Simulation {
 
     pub fn set_speed(&mut self, speed: f64) {
         self.speed = speed;
+    }
+
+    pub fn set_electrostatic_constant(&mut self, k: f64) {
+        self.k = k;
+    }
+
+    pub fn add_particle(&mut self, x: f64, y: f64, mass: f64, radius: f64, charge: f64) {
+        // TODO
+        let particle = Particle {
+            pos: Vector { x, y },
+            vel: Vector { x: 0.0, y: 0.0 },
+            mass,
+            radius,
+            charge
+        };
+
+        log!("new particle: {:?}", particle);
+    }
+
+    fn render_particle(&mut self, particle: &Particle) {
+        self.ctx.set_fill_style(if particle.charge > 0.0 { &self.color_pos_charge } else { &self.color_neg_charge });
+
+        self.ctx.begin_path();
+        self.ctx.arc(particle.pos.x, particle.pos.y, particle.radius, 0.0, 2.0 * f64::consts::PI).unwrap();
+        self.ctx.fill();
     }
 }
 

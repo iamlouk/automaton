@@ -37,16 +37,20 @@
 		z-index: 10;
 	}
 
-	:not(.is-hidden) {
-		visibility: visible;
-		opacity: 1;
-		transition: opacity 0.5s linear;
+	#ask-for-stuff {
+		position: fixed;
+		left: 50%;
+		top: 50%;
+		transform: translate(-50%, -50%);
+		margin: 0px;
+		padding: 10px;
+		border-radius: 10px;
+		border: 1px solid grey;
+		background-color: rgba(255, 255, 255, 0.5);
 	}
 
-	.is-hidden {
-		visibility: hidden;
-		opacity: 0;
-		transition: visibility 0s 0.5s, opacity 0.5s linear;
+	#ask-for-stuff.hidden {
+		display: none;
 	}
 
 	</style>
@@ -56,27 +60,58 @@
 
 	<div id="settings">
 		<table>
+			Add Particles by clicking! (<button id="restart-sim">restart</button>)
 			<tr>
 				<td><label for="speed">Speed: </label></td>
 				<td><input type="range" id="speed" min="0.01" max="1" step="0.01" /></td>
 			</tr>
+			<tr>
+				<td><label for="electrostatic-constant">Electrostatic Constant: </label></td>
+				<td><input type="range" id="electrostatic-constant" min="0.01" max="1" step="0.01" /></td>
+			</tr>
 		</table>
 	</div>
 
+	<div id="ask-for-stuff" class="hidden">
+		<label for="value"></label>
+		<input type="text" name="value" id="value"/>
+		<button>confirm</button>
+	</div>
+
 	<script type="module">
-		import init, { Simulation } from './pkg/inverse-square-law.js'
+		import init, { Simulation } from './pkg/inverse_square_law.js'
 
 		const settingsDiv = document.querySelector('#settings')
 
+		const askFor = (prompt, defaultValue = "") => new Promise((resolve, reject) => {
+			const div = document.querySelector('#ask-for-stuff')
+			const input = div.querySelector('input')
+			input.value = defaultValue
+			div.classList.remove('hidden')
+			input.focus()
+			div.querySelector('label').innerText = prompt
+			div.querySelector('button').onclick = () => {
+				let res = input.value
+				div.classList.add('hidden')
+				resolve(res)
+			}
+		})
+
 		const canvas = document.getElementById('canvas')
-		canvas.addEventListener('click', event => {
-			settingsDiv.classList.toggle('is-hidden')
+		canvas.addEventListener('click', async (event) => {
+			if (event.target == canvas) {
+				const x = event.clientX
+				const y = event.clientY
+
+				const mass = Number.parseFloat(await askFor('Mass?'))
+				const charge = Number.parseFloat(await askFor('Charge?'))
+
+				sim.add_particle(x, y, mass, mass * 10, charge)
+			}
 		})
 
 		let requestedNextFrame = null
 		let sim
-
-		let speed = getStoredNumberOrDefault('speed', 1.0)
 
 		const pixelsPerMeter = () => {
 			const elm = document.createElement('div')
@@ -87,6 +122,18 @@
 			return pixels
 		}
 
+		const getStoredNumberOrDefault = (key, def) => {
+			const item = window.localStorage.getItem(key)
+			if (item == undefined) {
+				return def
+			} else {
+				return Number.parseFloat(item)
+			}
+		}
+
+		let speed = getStoredNumberOrDefault('speed', 1.0)
+		let electrostaticConstant = getStoredNumberOrDefault('electrostatic-constant', 1.0)
+
 		const startNewSimulation = () => {
 			canvas.width = canvas.offsetWidth
 			canvas.height = canvas.offsetHeight
@@ -95,6 +142,7 @@
 
 			sim = Simulation.new(canvas.width, canvas.height)
 			sim.set_speed(speed)
+			sim.set_electrostatic_constant(electrostaticConstant)
 
 			let prev = Date.now()
 
@@ -123,13 +171,20 @@
 			startNewSimulation()
 		})
 
-
 		const speedSlider = settingsDiv.querySelector('#speed')
 		speedSlider.value = speed.toString()
 		speedSlider.addEventListener('change', event => {
 			speed = Number.parseFloat(speedSlider.value)
 			sim.set_speed(speed)
 			window.localStorage.setItem('speed', speedSlider.value)
+		})
+
+		const electrostaticConstantSlider = settingsDiv.querySelector('#electrostatic-constant')
+		electrostaticConstantSlider.value = electrostaticConstant.toString()
+		electrostaticConstantSlider.addEventListener('change', event => {
+			electrostaticConstant = Number.parseFloat(electrostaticConstantSlider.value)
+			sim.set_electrostatic_constant(electrostaticConstant)
+			window.localStorage.setItem('electrostatic-constant', electrostaticConstantSlider.value)
 		})
 
 	</script>
