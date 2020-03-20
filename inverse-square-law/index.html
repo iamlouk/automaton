@@ -86,14 +86,24 @@
 		const askFor = (prompt, defaultValue = "") => new Promise((resolve, reject) => {
 			const div = document.querySelector('#ask-for-stuff')
 			const input = div.querySelector('input')
+			const button = div.querySelector('button')
 			input.value = defaultValue
 			div.classList.remove('hidden')
 			input.focus()
 			div.querySelector('label').innerText = prompt
-			div.querySelector('button').onclick = () => {
+
+			button.onclick = () => {
 				let res = input.value
 				div.classList.add('hidden')
+				input.onkeydown = null
+				button.onclick = null
 				resolve(res)
+			}
+
+			input.onkeydown = (event) => {
+				if (event.keyCode == 13) {
+					button.onclick()
+				}
 			}
 		})
 
@@ -106,7 +116,7 @@
 				const mass = Number.parseFloat(await askFor('Mass?'))
 				const charge = Number.parseFloat(await askFor('Charge?'))
 
-				sim.add_particle(x, y, mass, mass * 10, charge)
+				sim.add_particle(x, y, mass, mass * 5, charge)
 			}
 		})
 

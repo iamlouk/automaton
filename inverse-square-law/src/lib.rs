@@ -28,7 +28,7 @@ pub struct Simulation {
     color_neg_charge: JsValue
 }
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone)]
 pub struct Particle {
     radius: f64,
     pos: Vector,
@@ -120,8 +120,8 @@ impl Simulation {
             self.particles[i].pos += 0.5 * acc * dt + vel * dt;
             self.particles[i].vel += acc;
 
-            let cur_particle = self.particles[i];
-            self.render_particle(&cur_particle);
+            self.render_particle(self.particles[i].pos,
+                self.particles[i].radius, self.particles[i].charge);
         }
     }
 
@@ -143,14 +143,14 @@ impl Simulation {
             charge
         };
 
-        log!("new particle: {:?}", particle);
+        self.particles.push(particle);
     }
 
-    fn render_particle(&mut self, particle: &Particle) {
-        self.ctx.set_fill_style(if particle.charge > 0.0 { &self.color_pos_charge } else { &self.color_neg_charge });
+    fn render_particle(&mut self, pos: Vector, radius: f64, charge: f64) {
+        self.ctx.set_fill_style(if charge > 0.0 { &self.color_pos_charge } else { &self.color_neg_charge });
 
         self.ctx.begin_path();
-        self.ctx.arc(particle.pos.x, particle.pos.y, particle.radius, 0.0, 2.0 * f64::consts::PI).unwrap();
+        self.ctx.arc(pos.x, pos.y, radius, 0.0, 2.0 * f64::consts::PI).unwrap();
         self.ctx.fill();
     }
 }
