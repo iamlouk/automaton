@@ -1,7 +1,7 @@
 // only 2-dimensional for now
 
-use std::ops::{Add, Sub, Mul};
-use std::ops::{AddAssign, SubAssign};
+use std::ops::{Add, Sub, Mul, Div};
+use std::ops::{AddAssign, SubAssign, MulAssign, DivAssign};
 
 #[derive(Clone, Copy)]
 pub struct Vector {
@@ -83,5 +83,25 @@ impl Mul<f64> for Vector {
             x: self.x * f,
             y: self.y * f
         }
+    }
+}
+
+impl MulAssign<f64> for Vector {
+    fn mul_assign(&mut self, f: f64) {
+        *self = *self * f;
+    }
+}
+
+impl Div<f64> for Vector {
+    type Output = Vector;
+
+    fn div(self, f: f64) -> Self::Output {
+        self * (1.0/f)
+    }
+}
+
+impl DivAssign<f64> for Vector {
+    fn div_assign(&mut self, f: f64) {
+        *self = *self / f;
     }
 }
