@@ -60,7 +60,7 @@
 
 	<div id="settings">
 		<table>
-			Add Particles by clicking! (<button id="restart-sim">restart</button>)
+			Add Particles by clicking!
 			<tr>
 				<td><label for="speed">Speed: </label></td>
 				<td><input type="range" id="speed" min="0.01" max="1" step="0.01" /></td>
@@ -69,6 +69,10 @@
 				<td><label for="electrostatic-constant">Electrostatic Constant: </label></td>
 				<td><input type="range" id="electrostatic-constant" min="0.01" max="1" step="0.01" /></td>
 			</tr>
+			<tr>
+				<td><button id="restart-sim">restart</button></td>
+				<td><label for="play-pause">Play/Pause: </label><input type="checkbox" name="play-pause" id="play-pause" value="checked" /></td>
+			</tr>
 		</table>
 	</div>
 
@@ -76,6 +80,8 @@
 		<label for="value"></label>
 		<input type="text" name="value" id="value"/>
 		<button>confirm</button>
+		<br>
+		<h6>Press <code>ESC</code> while textfield is focused to abort</h6>
 	</div>
 
 	<script type="module">
@@ -83,7 +89,12 @@
 
 		const settingsDiv = document.querySelector('#settings')
 
+		let allreadyAsking = false
 		const askFor = (prompt, defaultValue = "") => new Promise((resolve, reject) => {
+			if (allreadyAsking)
+				return reject(new Error("multiple prompts at once"))
+
+			allreadyAsking = true
 			const div = document.querySelector('#ask-for-stuff')
 			const input = div.querySelector('input')
 			const button = div.querySelector('button')
@@ -97,6 +108,7 @@
 				div.classList.add('hidden')
 				input.onkeydown = null
 				button.onclick = null
+				allreadyAsking = false
 				resolve(res)
 			}
 
@@ -104,24 +116,49 @@
 				if (event.keyCode == 13) {
 					button.onclick()
 				}
+				if (event.keyCode == 27) {
+					input.onkeydown = null
+					button.onclick = null
+					allreadyAsking = false
+					div.classList.add('hidden')
+					reject(new Error("ESC pressed"))
+				}
 			}
 		})
 
 		const canvas = document.getElementById('canvas')
 		canvas.addEventListener('click', async (event) => {
 			if (event.target == canvas) {
+				let wasPaused = paused
+				if (!paused)
+					pauseSimulation()
+
 				const x = event.clientX
 				const y = event.clientY
 
-				const mass = Number.parseFloat(await askFor('Mass?'))
-				const charge = Number.parseFloat(await askFor('Charge?'))
+				let mass, charge
+				try {
+					mass = Number.parseFloat(await askFor('Mass?'))
+					charge = Number.parseFloat(await askFor('Charge?'))	
+				} catch (err) {
+					console.warn(err)
 
-				sim.add_particle(x, y, mass, mass * 5, charge)
+					if (!wasPaused)
+						unpauseSimulation()
+
+					return
+				}
+
+				sim.add_particle(x, y, mass, charge)
+
+				if (!wasPaused)
+					unpauseSimulation()
 			}
 		})
 
 		let requestedNextFrame = null
 		let sim
+		let paused = false
 
 		const pixelsPerMeter = () => {
 			const elm = document.createElement('div')
@@ -161,13 +198,29 @@
 				const dt = now - prev
 				prev = now
 
-				sim.step(dt * speed)
+				if (!paused)
+					sim.step(dt * speed)
 
 				requestedNextFrame = window.requestAnimationFrame(step)
 			}
 
 			step()
 		}
+
+		const pauseSimulation = () => {
+			paused = true
+		}
+
+		const unpauseSimulation = () => {
+			paused = false
+		}
+
+		settingsDiv.querySelector('#play-pause').addEventListener('change', event => {
+			if (event.target.checked)
+				unpauseSimulation()
+			else
+				pauseSimulation()
+		})
 
 		document.addEventListener('DOMContentLoaded', async (event) => {
 			await init()

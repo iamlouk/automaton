@@ -7,6 +7,8 @@ use wasm_bindgen::{JsCast, JsValue};
 
 pub use crate::vector::Vector;
 
+const MASS_TO_RADIUS: f64 = 10.0;
+
 macro_rules! log {
     ( $( $t:tt )* ) => {
         web_sys::console::log_1(&format!( $( $t )* ).into());
@@ -68,9 +70,9 @@ impl Simulation {
         ctx.set_font("20px monospace");
 
         let mut particles: Vec<Particle> = Vec::new();
-        let r = 5.0;
-        let q = 1.0;
         let m = 1.0;
+        let q = 1.0;
+        let r = m * MASS_TO_RADIUS;
         let speed_0 = 0.1;
         let particle1 = Particle {
             radius: r,
@@ -133,13 +135,13 @@ impl Simulation {
         self.k = k;
     }
 
-    pub fn add_particle(&mut self, x: f64, y: f64, mass: f64, radius: f64, charge: f64) {
+    pub fn add_particle(&mut self, x: f64, y: f64, mass: f64, charge: f64) {
         // TODO
         let particle = Particle {
             pos: Vector { x, y },
             vel: Vector { x: 0.0, y: 0.0 },
             mass,
-            radius,
+            radius: mass * MASS_TO_RADIUS,
             charge
         };
 
