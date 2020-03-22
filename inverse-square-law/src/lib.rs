@@ -7,12 +7,14 @@ use wasm_bindgen::{JsCast, JsValue};
 
 pub use crate::vector::Vector;
 
-const MASS_TO_RADIUS: f64 = 10.0;
-
 macro_rules! log {
     ( $( $t:tt )* ) => {
         web_sys::console::log_1(&format!( $( $t )* ).into());
     }
+}
+
+fn get_radius_from_mass(radius: f64) -> f64 {
+    radius.powf(1./3.)
 }
 
 #[wasm_bindgen]
@@ -121,7 +123,7 @@ impl Simulation {
             pos: Vector { x, y },
             vel: Vector { x: vel_x, y: vel_y },
             mass,
-            radius: mass * MASS_TO_RADIUS,
+            radius: get_radius_from_mass(mass),
             charge
         };
 

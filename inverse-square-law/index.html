@@ -71,7 +71,7 @@
 			</tr>
 			<tr>
 				<td><label for="force-constant">Force Constant: </label></td>
-				<td><input type="range" id="force-constant" min="0.01" max="1" step="0.01" /></td>
+				<td><input type="range" id="force-constant" min="-1" max="1" step="0.01" /></td>
 			</tr>
 			<tr>
 				<td><button id="restart-sim">restart</button></td>
@@ -99,16 +99,63 @@
 				name: "Two rotating particles",
 				particles: [
 					{
-						pos: { x: -30., y:    0 },
-						vel: { x:   0., y: -0.1 },
+						pos: { x: -30., y:  0.0 },
+						vel: { x:   0., y: -1.0 },
 						charge: 1.,
 						mass: 1.
 					},
 					{
-						pos: { x: 30., y:   0 },
-						vel: { x:  0., y: 0.1 },
+						pos: { x: 30., y: 0.0 },
+						vel: { x:  0., y: 1.0 },
 						charge: -1.,
 						mass: 1.
+					}
+				]
+			},
+			{
+				name: "Sun-Earth-Moon",
+				particles: [
+					{
+						pos: { x: -2.0, y: 0.0 },
+						vel: { x: 0.0, y: 0.2213928691 },
+						charge: 100000.0,
+						mass: 100000.0
+					},
+					{
+						pos: { x: 200.0, y: 0.0 },
+						vel: { x: 0.0, y: -22.13928691 },
+						charge: 1000.0,
+						mass: 1000.0
+					},
+					{
+						pos: { x: 210.0, y: 0.0 },
+						vel: { x: 0.0, y: -32.04027701},
+						charge: 10.0,
+						mass: 10.0
+					}
+				]
+			},
+			{
+				// k = -0.001
+				name: "Sun-Earth-Moon2",
+				particles: [
+					{
+						pos: { x: -0.2002, y: 0.0 },
+						vel: { x: 0.0, y: 7.071060748e-3 },
+						charge: 10000000.0,
+						mass: 10000000.0
+					},
+					{
+						pos: { x: 199.99, y: 0.0 },
+						vel: { x: 0.0, y: -7.06299775 },
+						charge: 10000.0,
+						mass: 10000.0
+					},
+					{
+						pos: { x: 210.0, y: 0.0 },
+						vel: { x: 0.0, y: -8.06299775},
+						charge: 10.0,
+						mass: 10.0
 					}
 				]
 			}
@@ -232,7 +279,7 @@
 		}
 
 		let speed = getStoredNumberOrDefault('speed', 1.0)
-		let forceConstant = getStoredNumberOrDefault('force-constant', 1.0)
+		let forceConstant = getStoredNumberOrDefault('force-constant', -0.001)
 
 		const startNewSimulation = () => {
 			canvas.width = canvas.offsetWidth
