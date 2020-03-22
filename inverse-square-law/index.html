@@ -60,7 +60,7 @@
 
 	<div id="settings">
 		<table>
-			Add Particles by clicking!
+			<tr><td colspan="2" style="text-align: center;">Add Particles by clicking!</td></tr>
 			<tr>
 				<td><label for="select-sim"></label>Select Simulation:</td>
 				<td><select id="select-sim"></select></td>
@@ -75,7 +75,7 @@
 			</tr>
 			<tr>
 				<td><button id="restart-sim">restart</button></td>
-				<td><label for="play-pause">Play/Pause: </label><input type="checkbox" id="play-pause" value="checked" /></td>
+				<td><label for="play-pause">Play/Pause: </label><input type="checkbox" id="play-pause" value="checked" checked="checked" /></td>
 			</tr>
 			<tr>
 				<td colspan="2"><button id="sim-config-to-url" style="width: 100%;">Store Simulation to URL</button></td>
@@ -133,6 +133,7 @@
 				return
 
 			let particleConfig = particleConfigurations[Number.parseInt(selected)]
+			console.log(particleConfig)
 
 			restartSimulation()
 
@@ -185,8 +186,8 @@
 				if (!paused)
 					pauseSimulation()
 
-				const x = event.clientX
-				const y = event.clientY
+				const x = event.clientX - canvas.width * 0.5
+				const y = event.clientY - canvas.height * 0.5
 
 				let mass, charge
 				try {
