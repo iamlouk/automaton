@@ -1,4 +1,8 @@
 
+use bincode;
+use base64;
+use serde::{Serialize, Deserialize};
+
 mod vector;
 
 use std::{u32, f64};
@@ -31,7 +35,7 @@ pub struct Simulation {
 }
 
 #[wasm_bindgen]
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Particle {
     radius: f64,
     pos: Vector,
@@ -136,16 +140,29 @@ impl Simulation {
         self.ctx.fill();
     }
 
-    pub fn decode_state_and_apply(&mut self, encoded: String) {
-        // TODO
-        log!("TODO: Decode and apply: {:?}", encoded);
+    pub fn decode_state_and_apply(&mut self, encoded: String) -> bool {
+        self.particles.clear();
+        match base64::decode_config(encoded, base64::URL_SAFE) {
+            Ok(data) => match bincode::deserialize(&data) {
+                Ok(particles) => {
+                    self.particles = particles;
+                    true
+                },
+                Err(e) => {
+                    log!("error while decoding: {:?}", e);
+                    false
+                }
+            },
+            Err(e) => {
+                log!("error while decoding: {:?}", e);
+                false
+            }
+        }
     }
 
     pub fn encode_state(&mut self) -> String {
-        // TODO
-        let encoded = "TODO".to_owned();
-        log!("TODO: Encode: {:?}", self.particles);
-        encoded
+        let data: Vec<u8> = bincode::serialize(&self.particles).unwrap();
+        base64::encode_config(data, base64::URL_SAFE)
     }
 }
 

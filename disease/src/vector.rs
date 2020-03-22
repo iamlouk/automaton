@@ -1,9 +1,11 @@
 // only 2-dimensional for now
 
+use serde::{Serialize, Deserialize};
+
 use std::ops::{Add, Sub, Mul, Div};
 use std::ops::{AddAssign, SubAssign, MulAssign, DivAssign};
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, Serialize, Deserialize)]
 pub struct Vector {
     pub x: f64,
     pub y: f64,
