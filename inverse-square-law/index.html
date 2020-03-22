@@ -62,16 +62,23 @@
 		<table>
 			Add Particles by clicking!
 			<tr>
+				<td><label for="select-sim"></label>Select Simulation:</td>
+				<td><select id="select-sim"></select></td>
+			</tr>
+			<tr>
 				<td><label for="speed">Speed: </label></td>
 				<td><input type="range" id="speed" min="0.01" max="1" step="0.01" /></td>
 			</tr>
 			<tr>
-				<td><label for="electrostatic-constant">Electrostatic Constant: </label></td>
-				<td><input type="range" id="electrostatic-constant" min="0.01" max="1" step="0.01" /></td>
+				<td><label for="force-constant">Force Constant: </label></td>
+				<td><input type="range" id="force-constant" min="0.01" max="1" step="0.01" /></td>
 			</tr>
 			<tr>
 				<td><button id="restart-sim">restart</button></td>
-				<td><label for="play-pause">Play/Pause: </label><input type="checkbox" name="play-pause" id="play-pause" value="checked" /></td>
+				<td><label for="play-pause">Play/Pause: </label><input type="checkbox" id="play-pause" value="checked" /></td>
+			</tr>
+			<tr>
+				<td colspan="2"><button id="sim-config-to-url" style="width: 100%;">Store Simulation to URL</button></td>
 			</tr>
 		</table>
 	</div>
@@ -87,7 +94,52 @@
 	<script type="module">
 		import init, { Simulation } from './pkg/inverse_square_law.js'
 
+		const particleConfigurations = [
+			{
+				name: "Two rotating particles",
+				particles: [
+					{
+						pos: { x: -30., y:    0 },
+						vel: { x:   0., y: -0.1 },
+						charge: 1.,
+						mass: 1.
+					},
+					{
+						pos: { x: 30., y:   0 },
+						vel: { x:  0., y: 0.1 },
+						charge: -1.,
+						mass: 1.
+					}
+				]
+			}
+		];
+
 		const settingsDiv = document.querySelector('#settings')
+
+		const selectSim = settingsDiv.querySelector('#select-sim')
+		selectSim.innerHTML += '<option value="default">select something...</option>';
+
+		for (let i = 0; i < particleConfigurations.length; i++) {
+			let elm = document.createElement('option')
+			elm.value = i
+			elm.innerText = particleConfigurations[i].name
+			selectSim.appendChild(elm)
+		}
+
+		selectSim.addEventListener('change', event => {
+			let optionTags = Array.from(event.target.children)
+			let selected = optionTags.find((tag) => tag.selected).value
+			if (selected == 'default')
+				return
+
+			let particleConfig = particleConfigurations[Number.parseInt(selected)]
+
+			restartSimulation()
+
+			for (let p of particleConfig.particles) {
+				sim.add_particle(p.pos.x, p.pos.y, p.vel.x, p.vel.y, p.mass, p.charge)
+			}
+		})
 
 		let allreadyAsking = false
 		const askFor = (prompt, defaultValue = "") => new Promise((resolve, reject) => {
@@ -149,7 +201,7 @@
 					return
 				}
 
-				sim.add_particle(x, y, mass, charge)
+				sim.add_particle(x, y, 0., 0., mass, charge)
 
 				if (!wasPaused)
 					unpauseSimulation()
@@ -179,7 +231,7 @@
 		}
 
 		let speed = getStoredNumberOrDefault('speed', 1.0)
-		let electrostaticConstant = getStoredNumberOrDefault('electrostatic-constant', 1.0)
+		let forceConstant = getStoredNumberOrDefault('force-constant', 1.0)
 
 		const startNewSimulation = () => {
 			canvas.width = canvas.offsetWidth
@@ -189,7 +241,7 @@
 
 			sim = Simulation.new(canvas.width, canvas.height)
 			sim.set_speed(speed)
-			sim.set_electrostatic_constant(electrostaticConstant)
+			sim.set_force_constant(forceConstant)
 
 			let prev = Date.now()
 
@@ -215,6 +267,12 @@
 			paused = false
 		}
 
+		const restartSimulation = () => {
+			window.cancelAnimationFrame(requestedNextFrame)
+
+			startNewSimulation()
+		}
+
 		settingsDiv.querySelector('#play-pause').addEventListener('change', event => {
 			if (event.target.checked)
 				unpauseSimulation()
@@ -226,12 +284,24 @@
 			await init()
 
 			startNewSimulation()
+
+			const urlParameters = window.location.search
+				.substr(1).split('&')
+				.map(pair => pair.split('='))
+				.reduce((dict, pair) => {
+					dict[pair[0]] = pair[1]
+					return dict
+				}, {})
+
+			if (urlParameters.particles)
+				sim.decode_state_and_apply(urlParameters.particles)
 		})
 
-		settingsDiv.querySelector('#restart-sim').addEventListener('click', event => {
-			window.cancelAnimationFrame(requestedNextFrame)
+		settingsDiv.querySelector('#restart-sim').addEventListener('click', restartSimulation)
 
-			startNewSimulation()
+		settingsDiv.querySelector('#sim-config-to-url').addEventListener('click', event => {
+			let encoded = sim.encode_state()
+			window.location.search = '?particles=' + encoded
 		})
 
 		const speedSlider = settingsDiv.querySelector('#speed')
@@ -242,12 +312,12 @@
 			window.localStorage.setItem('speed', speedSlider.value)
 		})
 
-		const electrostaticConstantSlider = settingsDiv.querySelector('#electrostatic-constant')
-		electrostaticConstantSlider.value = electrostaticConstant.toString()
-		electrostaticConstantSlider.addEventListener('change', event => {
-			electrostaticConstant = Number.parseFloat(electrostaticConstantSlider.value)
-			sim.set_electrostatic_constant(electrostaticConstant)
-			window.localStorage.setItem('electrostatic-constant', electrostaticConstantSlider.value)
+		const forceConstantSlider = settingsDiv.querySelector('#force-constant')
+		forceConstantSlider.value = forceConstant.toString()
+		forceConstantSlider.addEventListener('change', event => {
+			forceConstant = Number.parseFloat(forceConstantSlider.value)
+			sim.set_force_constant(forceConstant)
+			window.localStorage.setItem('force-constant', forceConstantSlider.value)
 		})
 
 	</script>

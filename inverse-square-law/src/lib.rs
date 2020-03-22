@@ -30,6 +30,7 @@ pub struct Simulation {
     color_neg_charge: JsValue
 }
 
+#[wasm_bindgen]
 #[derive(Debug, Clone)]
 pub struct Particle {
     radius: f64,
@@ -68,34 +69,13 @@ impl Simulation {
             .unwrap();
         
         ctx.set_font("20px monospace");
-
-        let mut particles: Vec<Particle> = Vec::new();
-        let m = 1.0;
-        let q = 1.0;
-        let r = m * MASS_TO_RADIUS;
-        let speed_0 = 0.1;
-        let particle1 = Particle {
-            radius: r,
-            pos: Vector { x: 0.5*width - 3.0*r, y: 0.5*height,},
-            vel: Vector { x: 0.0, y: -speed_0,},
-            charge: q,
-            mass: m,
-        };
-        let particle2 = Particle {
-            radius: r,
-            pos: Vector { x: 0.5*width + 3.0*r, y: 0.5*height,},
-            vel: Vector { x: 0.0, y: speed_0,},
-            charge: -q,
-            mass: m,
-        };
-        particles.push(particle1);
-        particles.push(particle2);
+        ctx.translate(width * 0.5, height * 0.5).unwrap();
 
         Simulation {
             width,
             height,
             ctx,
-            particles,
+            particles: vec![],
             k: 1.0,
             speed: 1.0,
             color_pos_charge: JsValue::from_str("#ff3300"),
@@ -104,7 +84,7 @@ impl Simulation {
     }
 
     pub fn step(&mut self, dt: f64) {
-        self.ctx.clear_rect(0.0, 0.0, self.width, self.height);
+        self.ctx.clear_rect(-self.width * 0.5, -self.height * 0.5, self.width, self.height);
 
         for i in 0..self.particles.len() {
             // calc acceleration for particle i
@@ -131,15 +111,15 @@ impl Simulation {
         self.speed = speed;
     }
 
-    pub fn set_electrostatic_constant(&mut self, k: f64) {
+    pub fn set_force_constant(&mut self, k: f64) {
         self.k = k;
     }
 
-    pub fn add_particle(&mut self, x: f64, y: f64, mass: f64, charge: f64) {
+    pub fn add_particle(&mut self, x: f64, y: f64, vel_x: f64, vel_y: f64, mass: f64, charge: f64) {
         // TODO
         let particle = Particle {
             pos: Vector { x, y },
-            vel: Vector { x: 0.0, y: 0.0 },
+            vel: Vector { x: vel_x, y: vel_y },
             mass,
             radius: mass * MASS_TO_RADIUS,
             charge
@@ -154,6 +134,18 @@ impl Simulation {
         self.ctx.begin_path();
         self.ctx.arc(pos.x, pos.y, radius, 0.0, 2.0 * f64::consts::PI).unwrap();
         self.ctx.fill();
+    }
+
+    pub fn decode_state_and_apply(&mut self, encoded: String) {
+        // TODO
+        log!("TODO: Decode and apply: {:?}", encoded);
+    }
+
+    pub fn encode_state(&mut self) -> String {
+        // TODO
+        let encoded = "TODO".to_owned();
+        log!("TODO: Encode: {:?}", self.particles);
+        encoded
     }
 }
 
