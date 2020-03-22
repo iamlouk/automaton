@@ -121,14 +121,18 @@ impl Simulation {
         self.k = k;
     }
 
-    pub fn add_particle(&mut self, x: f64, y: f64, vel_x: f64, vel_y: f64, mass: f64, charge: f64) {
+    pub fn add_particle(&mut self, mut radius: f64, x: f64, y: f64, vel_x: f64, vel_y: f64, mass: f64, charge: f64) {
         // TODO
+        if radius == 0. {
+            radius = get_radius_from_mass(mass);
+        }
+
         let particle = Particle {
             pos: Vector { x, y },
             vel: Vector { x: vel_x, y: vel_y },
             mass,
-            radius: get_radius_from_mass(mass),
-            charge
+            radius,
+            charge,
         };
 
         self.particles.push(particle);

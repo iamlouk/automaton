@@ -67,7 +67,7 @@
 			</tr>
 			<tr>
 				<td><label for="speed">Speed: </label></td>
-				<td><input type="range" id="speed" min="0.01" max="1" step="0.01" /></td>
+				<td><input type="range" id="speed" min="0.001" max="0.2" step="0.001" /></td>
 			</tr>
 			<tr>
 				<td><label for="force-constant">Force Constant: </label></td>
@@ -97,37 +97,46 @@
 		const particleConfigurations = [
 			{
 				name: "Two rotating particles",
+				speed: 0.1,
+				k: 1.0,
 				particles: [
 					{
+						radius: 5.,
 						pos: { x: -30., y:  0.0 },
 						vel: { x:   0., y: -1.0 },
-						charge: 1.,
+						charge: 10.,
 						mass: 1.
 					},
 					{
+						radius: 5.,
 						pos: { x: 30., y: 0.0 },
 						vel: { x:  0., y: 1.0 },
-						charge: -1.,
+						charge: -10.,
 						mass: 1.
 					}
 				]
 			},
 			{
 				name: "Sun-Earth-Moon",
+				speed: 0.1,
+				k: -1.0,
 				particles: [
 					{
+						radius: 25.,
 						pos: { x: -2.0, y: 0.0 },
 						vel: { x: 0.0, y: 0.2213928691 },
 						charge: 100000.0,
 						mass: 100000.0
 					},
 					{
+						radius: 10.,
 						pos: { x: 200.0, y: 0.0 },
 						vel: { x: 0.0, y: -22.13928691 },
 						charge: 1000.0,
 						mass: 1000.0
 					},
 					{
+						radius: 5.,
 						pos: { x: 210.0, y: 0.0 },
 						vel: { x: 0.0, y: -32.04027701},
 						charge: 10.0,
@@ -136,22 +145,26 @@
 				]
 			},
 			{
-				// k = -0.001
 				name: "Sun-Earth-Moon2",
+				speed: 0.001,
+				k: -0.001,
 				particles: [
 					{
+						radius: 25.,
 						pos: { x: -0.2002, y: 0.0 },
 						vel: { x: 0.0, y: 7.071060748e-3 },
 						charge: 10000000.0,
 						mass: 10000000.0
 					},
 					{
+						radius: 10.,
 						pos: { x: 199.99, y: 0.0 },
 						vel: { x: 0.0, y: -7.06299775 },
 						charge: 10000.0,
 						mass: 10000.0
 					},
 					{
+						radius: 5.,
 						pos: { x: 210.0, y: 0.0 },
 						vel: { x: 0.0, y: -8.06299775},
 						charge: 10.0,
@@ -180,12 +193,13 @@
 				return
 
 			let particleConfig = particleConfigurations[Number.parseInt(selected)]
-			console.log(particleConfig)
 
 			restartSimulation()
 
+			sim.set_speed(particleConfig.speed)
+			sim.set_force_constant(particleConfig.k)
 			for (let p of particleConfig.particles) {
-				sim.add_particle(p.pos.x, p.pos.y, p.vel.x, p.vel.y, p.mass, p.charge)
+				sim.add_particle(p.radius, p.pos.x, p.pos.y, p.vel.x, p.vel.y, p.mass, p.charge)
 			}
 		})
 
@@ -249,7 +263,7 @@
 					return
 				}
 
-				sim.add_particle(x, y, 0., 0., mass, charge)
+				sim.add_particle(0., x, y, 0., 0., mass, charge)
 
 				if (!wasPaused)
 					unpauseSimulation()
@@ -278,8 +292,8 @@
 			}
 		}
 
-		let speed = getStoredNumberOrDefault('speed', 1.0)
-		let forceConstant = getStoredNumberOrDefault('force-constant', -0.001)
+		let speed = getStoredNumberOrDefault('speed', 0.1)
+		let forceConstant = getStoredNumberOrDefault('force-constant', 1)
 
 		const startNewSimulation = () => {
 			canvas.width = canvas.offsetWidth
@@ -343,13 +357,17 @@
 
 			if (urlParameters.particles)
 				sim.decode_state_and_apply(urlParameters.particles)
+			if (urlParameters.k)
+				sim.set_force_constant(urlParameters.k)
+			if (urlParameters.speed)
+				sim.set_speed(urlParameters.speed)
 		})
 
 		settingsDiv.querySelector('#restart-sim').addEventListener('click', restartSimulation)
 
 		settingsDiv.querySelector('#sim-config-to-url').addEventListener('click', event => {
 			let encoded = sim.encode_state()
-			window.location.search = '?particles=' + encoded
+			window.location.search = '?particles=' + encoded + '&k=' + forceConstant + '&speed=' + speed
 		})
 
 		const speedSlider = settingsDiv.querySelector('#speed')
